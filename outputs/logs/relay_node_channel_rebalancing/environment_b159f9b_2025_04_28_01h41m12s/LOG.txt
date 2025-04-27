@@ -1,0 +1,92 @@
+2025-04-28 01:41:14,116 STDOUT INFO     Established redirection of `stdout`.
+2025-04-28 01:41:14,117 pypet.storageservice.HDF5StorageService INFO     I will use the hdf5 file `../outputs/results/results_test.hdf5`.
+2025-04-28 01:41:14,120 pypet.storageservice.HDF5StorageService INFO     You specified ``overwrite_file=True``, so I deleted the file `../outputs/results/results_test.hdf5`.
+2025-04-28 01:41:14,123 pypet.environment.Environment INFO     Environment initialized.
+2025-04-28 01:41:14,124 pypet.environment.Environment INFO     I am preparing the Trajectory for the experiment and initialise the store.
+2025-04-28 01:41:14,124 pypet.environment.Environment INFO     Initialising the storage for the trajectory.
+2025-04-28 01:41:14,184 pypet.storageservice.HDF5StorageService INFO     Initialising storage or updating meta data of Trajectory `relay_node_channel_rebalancing`.
+2025-04-28 01:41:14,258 pypet.storageservice.HDF5StorageService INFO     Finished init or meta data update for `relay_node_channel_rebalancing`.
+2025-04-28 01:41:14,262 pypet.environment.Environment INFO     
+************************************************************
+STARTING runs of trajectory
+`relay_node_channel_rebalancing`.
+************************************************************
+
+2025-04-28 01:41:14,265 pypet INFO     PROGRESS: Finished 0/4 runs [                    ]  0.0%
+2025-04-28 01:41:14,266 pypet INFO     
+=========================================
+ Starting single run #0 of 4 
+=========================================
+
+2025-04-28 01:41:17,460 STDOUT INFO     Initial total fortune of node N = 2000.00
+2025-04-28 01:41:17,474 STDOUT INFO     Final total fortune of node N = 2998.02
+2025-04-28 01:41:18,294 pypet INFO     
+=========================================
+ Finished single run #0 of 4 
+=========================================
+
+2025-04-28 01:41:18,295 pypet INFO     PROGRESS: Finished 1/4 runs [=====               ] 25.0%, remaining: 0:00:12
+2025-04-28 01:41:18,296 pypet INFO     
+=========================================
+ Starting single run #1 of 4 
+=========================================
+
+2025-04-28 01:41:21,813 STDOUT INFO     Initial total fortune of node N = 2000.00
+2025-04-28 01:41:21,828 STDOUT INFO     Final total fortune of node N = 8707.87
+2025-04-28 01:41:22,197 pypet INFO     
+=========================================
+ Finished single run #1 of 4 
+=========================================
+
+2025-04-28 01:41:22,199 pypet INFO     PROGRESS: Finished 2/4 runs [==========          ] 50.0%, remaining: 0:00:07
+2025-04-28 01:41:22,199 pypet INFO     
+=========================================
+ Starting single run #2 of 4 
+=========================================
+
+2025-04-28 01:41:25,836 STDOUT INFO     Initial total fortune of node N = 2000.00
+2025-04-28 01:41:25,841 STDOUT INFO     Final total fortune of node N = 7748.74
+2025-04-28 01:41:26,221 pypet INFO     
+=========================================
+ Finished single run #2 of 4 
+=========================================
+
+2025-04-28 01:41:26,222 pypet INFO     PROGRESS: Finished 3/4 runs [===============     ] 75.0%, remaining: 0:00:03
+2025-04-28 01:41:26,222 pypet INFO     
+=========================================
+ Starting single run #3 of 4 
+=========================================
+
+2025-04-28 01:41:42,247 STDOUT INFO     Initial total fortune of node N = 2000.00
+2025-04-28 01:41:42,251 STDOUT INFO     Final total fortune of node N = 9263.20
+2025-04-28 01:41:42,628 pypet INFO     
+=========================================
+ Finished single run #3 of 4 
+=========================================
+
+2025-04-28 01:41:42,630 pypet INFO     PROGRESS: Finished 4/4 runs [====================]100.0%
+2025-04-28 01:41:42,650 pypet.storageservice.HDF5StorageService INFO     Initialising storage or updating meta data of Trajectory `relay_node_channel_rebalancing`.
+2025-04-28 01:41:42,746 pypet.storageservice.HDF5StorageService INFO     Finished init or meta data update for `relay_node_channel_rebalancing`.
+2025-04-28 01:41:42,785 pypet.environment.Environment INFO     
+************************************************************
+FINISHED all runs of trajectory
+`relay_node_channel_rebalancing`.
+************************************************************
+
+2025-04-28 01:41:42,798 pypet.environment.Environment INFO     
+************************************************************
+STARTING FINAL STORING of trajectory
+`relay_node_channel_rebalancing`
+************************************************************
+
+2025-04-28 01:41:42,824 pypet.storageservice.HDF5StorageService INFO     Start storing Trajectory `relay_node_channel_rebalancing`.
+2025-04-28 01:41:42,933 pypet.storageservice.HDF5StorageService INFO     Storing branch `config`.
+2025-04-28 01:41:43,330 pypet.storageservice.HDF5StorageService INFO     Storing branch `parameters`.
+2025-04-28 01:41:43,481 pypet.storageservice.HDF5StorageService INFO     Finished storing Trajectory `relay_node_channel_rebalancing`.
+2025-04-28 01:41:43,524 pypet.environment.Environment INFO     
+************************************************************
+FINISHED FINAL STORING of trajectory
+`relay_node_channel_rebalancing`.
+************************************************************
+
+2025-04-28 01:41:43,683 pypet.environment.Environment INFO     All runs of trajectory `relay_node_channel_rebalancing` were completed successfully.
