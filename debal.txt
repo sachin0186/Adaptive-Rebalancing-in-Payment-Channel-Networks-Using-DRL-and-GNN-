@@ -1,0 +1,893 @@
+This section presents the methodology for a novel hierarchical framework designed to optimize liquidity distribution in Payment Channel Networks (PCNs). PCNs enable
+scalable, low-cost off-chain transactions in blockchain systems by maintaining bidirectional payment channels between
+nodes. However, frequent transactions can lead to imbalanced
+channel states, where funds accumulate disproportionately in
+one direction, causing transaction failures due to insufficient
+liquidity. The proposed framework addresses this challenge
+by rebalancing channel funds to ensure uniform liquidity,
+maximize transaction success rates, and minimize operational
+costs.
+The methodology integrates four key components organized
+hierarchically to achieve efficient rebalancing. First, a Deep
+Reinforcement Learning (DRL)-based node assessment mechanism evaluates local liquidity conditions, enabling nodes to
+proactively request rebalancing based on channel balances and
+transaction dynamics. Second, a randomized leader election
+process selects a coordinating node to manage rebalancing operations, ensuring decentralization and fairness across
+the network. Third, a balance-aware Graph Neural Network
+(GNN) calculates optimal rebalancing paths by modeling the
+network topology and prioritizing paths that maintain balanced
+liquidity. Finally, a multi-cycle rebalancing strategy executes
+fund transfers iteratively, validating each cycle against balance constraints to prevent extreme imbalances. Together,
+these components form a cohesive framework that leverages
+advanced machine learning and graph-based techniques to
+enhance PCN performance.
+The methodology is structured to provide a comprehensive
+and reproducible approach, detailing the problem formulation,
+graph modeling, GNN and DRL designs, training procedures,
+assumptions, limitations, and implementation specifics. Mathematical formulations and algorithmic descriptions are provided
+to ensure technical rigor, with the goal of achieving robust and
+scalable rebalancing in dynamic PCN environments.
+A. Step 1: Node-Level Liquidity Assessment and Rebalancing Request Decision
+B. System Model and Problem Formulation
+This subsection establishes the system model for a Payment
+Channel Network (PCN) and formulates the node-level liquidity assessment and rebalancing request decision as a Markov
+Decision Process (MDP). The formulation integrates state
+variables, a constrained Time to Depletion (TTD) calculation
+with balance-ratio checks, and rebalancing trigger criteria
+to enable adaptive liquidity management, ensuring uniform
+channel balances and high transaction success rates.
+1) System Model: A PCN is modeled as an undirected
+graph G = (V, E), where V denotes the set of nodes (users
+or entities) and E represents bidirectional payment channels.
+Each channel c ∈ E between nodes u, v ∈ V is characterized
+by:
+• Capacity Cc: The total funds allocated to the channel,
+fixed upon creation.
+• Local Balance l
+u
+c
+: Funds available for node u to send to
+v.
+• Remote Balance r
+u
+c
+: Funds available for v to send to u,
+where r
+u
+c = Cc − l
+u
+c
+.
+The balance constraint ensures l
+u
+c +l
+v
+c = Cc. Each node v ∈ V
+is associated with:
+• Outgoing Transaction Rate T
+v
+out: The rate of funds sent
+from v, measured in units per hour.
+• Incoming Transaction Rate T
+v
+in: The rate of funds
+received by v, in units per hour.
+• Total Outgoing Balance b
+v
+local: The sum of local balances
+across all incident channels, defined as:
+b
+v
+local =
+X
+c∈Cv
+l
+v
+c
+, (1)
+where Cv ⊆ E is the set of channels incident to v.
+The state variables for each node v include:
+• Channel Balances: {(l
+v
+c
+, rv
+c
+) | c ∈ Cv}, capturing
+liquidity in each direction.
+• Transaction Rates: T
+v
+out, Tv
+in, reflecting transaction activity.
+• Total Outgoing Balance: b
+v
+local, indicating available funds
+for sending.
+• Time to Depletion (TTD): TTDv
+, estimating the duration
+until liquidity depletion.
+These variables provide a comprehensive view of the node’s
+liquidity state, enabling precise assessment for rebalancing
+decisions.
+2) Problem Formulation: The node-level liquidity assessment and rebalancing request decision aim to determine when
+a node should initiate a rebalancing request to maintain sufficient liquidity and uniform channel balances. The objectives
+are:
+1) Maximize Transaction Success Rate: Ensure channels
+have adequate balances to support outgoing transactions,
+minimizing failures due to insufficient funds.
+2) Ensure Uniform Liquidity: Maintain a minimum balance ratio for each channel c:
+l
+u
+c ≥ θCc and l
+v
+c ≥ θCc, (2)
+where θ = 0.2 is the minimum balance ratio threshold.
+3) Minimize Rebalancing Costs: Reduce the frequency
+and cost of rebalancing operations, where costs are
+proportional to the transferred amount and channel fee
+rate fc.
+The constraints include:
+• Channel Capacity: Fund transfers must satisfy 0 ≤
+l
+u
+c
+, lv
+c ≤ Cc.
+• Skewness Limit: Post-rebalancing skewness, defined as:
+Skewness(c) = |l
+u
+c − l
+v
+c
+|
+Cc
+, (3)
+must satisfy Skewness(c) ≤ σ, where σ = 0.8.
+• Circular Rebalancing: Rebalancing operations use circular paths to redistribute funds off-chain.
+To achieve these objectives, the decision process is formulated as an MDP for each node v, defined by the tuple
+(Sv, Av, Pv, Rv, γ).
+3) Markov Decision Process Formulation: The MDP
+models the node’s decision to request rebalancing, optimizing
+long-term liquidity and balance uniformity. The components
+are:
+• State Space Sv: The state sv ∈ Sv encapsulates the
+node’s liquidity and transaction dynamics, defined as:
+sv = ({l
+v
+c
+, rv
+c
+| c ∈ Cv}, Tv
+out, Tv
+in, TTDv
+), (4)
+where:
+– {l
+v
+c
+, rv
+c
+| c ∈ Cv}: Local and remote balances for
+all incident channels, providing a detailed view of
+liquidity distribution.
+– T
+v
+out, Tv
+in: Outgoing and incoming transaction rates,
+capturing the node’s transaction activity.
+– TTDv
+: Time to Depletion, calculated as:
+TTDv =
+b
+v
+local
+max(T
+v
+out − T
+v
+in, ϵ)
+, (5)
+where ϵ = 0.001 prevents division by zero, and b
+v
+local
+is given by (1). TTD estimates the duration until
+the node’s outgoing funds are depleted, serving as
+a critical indicator of liquidity risk.
+The state space is continuous, with sv ∈ R
+2|Cv|+3
+,
+assuming a fixed number of channels per node.
+• Action Space Av: The action set is binary:
+av ∈ {0, 1}, (6)
+where av = 1 indicates a request for rebalancing, prompting the network to initiate a rebalancing cycle, and av = 0
+indicates no request, maintaining the current state.
+• Transition Dynamics Pv(s
+′
+|s, a): The transition probabilities describe how the state evolves based on the action
+and network dynamics. If av = 0, the state updates
+according to transaction flows, adjusting channel balances
+based on T
+v
+out and T
+v
+in. Specifically, for each channel
+c ∈ Cv, the local balance l
+v
+c decreases by the outgoing
+transaction rate and increases by the incoming rate,
+subject to capacity constraints. If av = 1, a rebalancing
+request is submitted, and if accepted by the network’s
+leader, a rebalancing cycle adjusts channel balances along
+a selected circular path, updating l
+v
+c
+and r
+v
+c
+. The TTD and
+transaction rates may also change based on network-wide
+effects. As the framework employs model-free reinforcement learning, the exact probabilities are not modeled
+explicitly but are learned from experience in a simulated
+environment.
+• Reward Function Rv(s, a, s′
+): The reward function
+encourages actions that enhance liquidity and channel
+balance uniformity while minimizing unnecessary rebalancing requests. It is defined as:
+Rv(s, a, s′
+) = w1 · (TTDv
+(s
+′
+) − TTDv
+(s))
++ w2 ·
+
+1
+|Cv|
+X
+c∈Cv
+
+min 
+l
+v
+c
+(s
+′
+)
+Cc
+,
+r
+v
+c
+(s
+′
+)
+Cc
+
+− min 
+l
+v
+c
+(s)
+Cc
+,
+r
+v
+c
+(s)
+Cc
+
+− w3 · I(a = 1),
+(7)
+where:
+– TTDv
+(s
+′
+)−TTDv
+(s): Improvement in TTD, rewarding actions that extend the node’s liquidity lifespan.
+–
+1
+|Cv|
+P
+c∈Cv
+
+min 
+l
+v
+c
+(s
+′
+)
+Cc
+,
+r
+v
+c
+(s
+′
+)
+Cc
+
+− min 
+l
+v
+c
+(s)
+Cc
+,
+r
+v
+c
+(s)
+Cc
+ : Average improvement
+in balance ratios across incident channels, promoting
+uniformity.
+– I(a = 1): Indicator function penalizing rebalancing requests to avoid excessive operations, with a
+small penalty to balance proactive and conservative
+actions.
+– Weights: w1 = 0.5, w2 = 0.5, w3 = 0.1, balancing
+TTD improvement, balance uniformity, and request
+cost.
+• Discount Factor γ: The discount factor is set to:
+γ = 0.99, (8)
+emphasizing long-term rewards to ensure sustained liquidity and balance uniformity over multiple decision
+epochs.
+4) Constrained TTD Calculation and Balance-Ratio
+Checks: The TTD calculation is constrained by balanceratio checks to ensure proactive rebalancing. For each node
+v, the TTD is computed using (5), reflecting the time until
+outgoing funds are depleted based on the net outflow T
+v
+out−T
+v
+in.
+The calculation aggregates local balances across all incident
+channels, providing a holistic view of the node’s liquidity
+capacity.
+Balance-ratio checks are performed for each channel c ∈ Cv,
+evaluating:
+min 
+l
+v
+c
+Cc
+,
+r
+v
+c
+Cc
+
+< θ, (9)
+where θ = 0.2. This condition identifies channels where
+either direction has less than 20% of the channel’s capacity,
+indicating a risk of imbalance that could hinder bidirectional
+transactions.
+The rebalancing trigger criteria within the MDP framework
+are:
+• TTD Threshold: A low TTD (TTDv < τ , where τ = 2
+hours) signals rapid depletion of outgoing funds, increasing the likelihood of a rebalancing request.
+• Balance Ratio Violation: If any channel satisfies (10),
+the node is more likely to request rebalancing to restore
+balance uniformity.
+These criteria are embedded in the state space and reward
+function, enabling the DRL agent to learn a policy that
+dynamically balances TTD and balance-ratio considerations.
+5) Rebalancing Request Decision: The MDP enables each
+node to learn an optimal policy πv(av|sv) that maps states
+to actions, maximizing the expected cumulative discounted
+reward:
+J(πv) = Eπv
+"X∞
+t=0
+γ
+tRv(st, at, st+1) | s0
+#
+. (10)
+The policy is learned using the Soft Actor-Critic (SAC)
+algorithm, which optimizes the policy by maximizing both the
+expected reward and policy entropy, ensuring robust decisionmaking in the continuous state space.
+The state variables, constrained TTD, and balance-ratio
+checks provide a detailed representation of the node’s liquidity
+state. The reward function (8) aligns with the objectives by
+rewarding TTD improvements and balance uniformity while
+penalizing excessive requests, ensuring efficient and effective
+rebalancing decisions.
+The node-level liquidity assessment process is formalized
+in the following algorithm, which computes the TTD and
+checks balance ratios to determine if a rebalancing request
+is warranted.
+Algorithm 1 Constrained Node-Level Liquidity Assessment
+1: function CONSTRAINEDLIQUIDITYASSESSMENT(node
+v, channels C
+v
+out)
+2: θ ← 0.2, τ ← 2, ϵ ← 0.001
+3: b
+v
+local ←
+P
+c∈Cv
+out
+l
+v
+c
+4: net flow ← max
+T
+v
+out − T
+v
+in, ϵ
+5: for each c ∈ Cv
+out do
+6: ratio ← min l
+v
+c
+Cc
+,
+r
+v
+c
+Cc
+
+7: if ratio < θ then
+8: return True
+9: end if
+10: end for
+11: ttd ←
+b
+v
+local
+net flow
+12: if ttd < τ then
+13: return True
+14: end if
+15: return False
+16: end function
+C. Step 2: Decentralized Leader Election for Rebalancing
+Coordination
+The leader election protocol is triggered when one or
+more nodes issue rebalancing requests, or at predefined time
+intervals. Upon activation, each node v with an active request
+computes a secure hash of its identifier concatenated with
+the current timestamp: hv = SHA256(IDv ∥ T). Nodes
+broadcast their hashes or a signed vote to the network, enabling
+a decentralized selection without a single point of failure. The
+candidate set is then sorted by hash value in ascending order.
+The election iterates through the sorted list of candidates
+until a valid leader is found. Each candidate node v is checked
+for sufficient liquidity and balanced channel conditions. We
+require the total outgoing balance of v,
+b
+out
+v =
+X
+c∈Cout
+v
+lvc,
+to exceed a threshold κ (ensuring it can fund a rebalancing
+transaction). In addition, for each outgoing channel c of v, the
+balance ratio
+minlvc
+Cc
+,
+rvc
+Cc
+
+must exceed a threshold θ, guaranteeing that neither side
+of any channel is nearly depleted. If a candidate fails any
+constraint, the election proceeds to the next node in the
+sorted list. This fallback continues until a candidate satisfies
+all requirements or the list is exhausted. If no valid leader
+emerges, the election is deferred to the next trigger, avoiding
+an overloaded coordinator.
+Once a leader vleader is elected, it announces its status to
+the network by broadcasting a signed LEADER_ANNOUNCE
+message containing IDvleader and the election timestamp. Other
+nodes verify the announcement and update their local state
+to recognize the new leader. This announcement serves as a
+handover signal: the previous leader (if any) finalizes any inflight rebalancing tasks and relinquishes coordination to the
+new leader, who then begins the next rebalancing cycle. The
+announcement ensures a seamless transition without disrupting
+ongoing or future rebalancing operations.
+Algorithm 2 Multi-Path Leader Election
+1: procedure MULTIPATHLEADERELECTION(V, T, κ, θ)
+2: S ← {v ∈ V | RebalancingRequest(v) = True}
+3: if S is empty then
+4: return None ▷ no candidates
+5: end if
+6: Compute hashes {hv = SHA256(IDv ∥ T) : v ∈ S}
+7: Sort candidates {(hv, v)} in ascending order of hv
+8: for each (hv, v) in sorted list do
+9: b
+out
+v ←
+P
+c∈Cout
+v
+lvc
+10: if b
+out
+v < κ then
+11: continue ▷ insufficient outgoing balance
+12: end if
+13: valid ← True
+14: for each channel c = (v, u) ∈ C
+out
+v do
+15: ρ ← min
+lvc/Cc, rvc/Cc
+
+16: if ρ < θ then
+17: valid ← False ▷ channel near depletion
+18: break
+19: end if
+20: end for
+21: if valid then
+22: return v ▷ select as leader
+23: end if
+24: end for
+25: return None ▷ no valid leader found
+26: end procedure
+Periodic re-election uses the same MULTIPATHLEADERELECTION function at each interval ∆t, with a refreshed
+timestamp to ensure unpredictability in leader selection.
+D. Step 3: Global Path Calculation using GNN
+With the leader elected, the network-wide path calculation
+process begins. The leader uses a GNN to compute candidate
+paths across the PCN, capturing network dependencies and selecting paths that effectively rebalance liquidity with minimal
+cost. The GNN leverages the graph structure G = (V, E),
+previously defined with node features (e.g., total outgoing
+balance, transaction rates) and edge features (e.g., capacity,
+balance ratio, fee rate), to compute paths that maximize liquidity redistribution while enforcing balance constraints. The
+architecture integrates message-passing mechanisms with a
+constraint layer to penalize paths causing channel imbalances,
+ensuring uniform liquidity distribution.
+1) BalanceAware GNN Architecture: The BalanceAware
+GNN processes the PCN graph to generate node embeddings
+and path scores, prioritizing circular paths that maintain balanced channel liquidity. The architecture comprises three components: two Graph Convolutional Network (GCN) layers
+message passing, a constraint layer for balance enforcement,
+and a path scoring module. The input features are:
+• Node Features: For node v ∈ V , the initial embedding
+h
+(0)
+v = [b
+v
+local, Tv
+out − T
+v
+in] ∈ R
+2
+, where b
+v
+local =
+P
+c∈Cv
+l
+v
+c
+is the total outgoing balance, and T
+v
+out − T
+v
+in is the net
+transaction flow.
+• Edge Features: For edge c = (u, v) ∈ E, the feature
+vector ec = [Cc, min(l
+u
+c /Cc, ru
+c /Cc), fc] ∈ R
+3
+, capturing
+capacity, balance ratio, and fee rate.
+The message-passing mechanism proceeds as follows:
+• First GCN Layer: Aggregates neighbor information to
+update node embeddings:
+h
+(1)
+v = ReLU
+
+W1 ·
+X
+u∈N(v)
+h
+(0)
+u + e(u,v)
+p
+|N (v)||N (u)|
++ B1h
+(0)
+v
+
+ ,
+(11)
+where N (v) is the set of neighbors of v, W1 ∈ R
+16×2
+and
+B1 ∈ R
+16×2
+are learnable weights, and the normalization
+factor stabilizes training. The output h
+(1)
+v ∈ R
+16 captures
+local graph structure and liquidity information.
+• Second GCN Layer: Further refines embeddings:
+h
+(2)
+v = ReLU
+
+W2 ·
+X
+u∈N(v)
+h
+(1)
+u + e(u,v)
+p
+|N (v)||N (u)|
++ B2h
+(1)
+v
+
+ ,
+(12)
+where W2 ∈ R
+8×16
+, B2 ∈ R
+8×16, producing h
+(2)
+v ∈ R
+8
+.
+This layer enhances the representation by incorporating
+higher-order neighbor interactions.
+• Constraint Layer: Computes a per-edge constraint score
+to penalize paths that violate balance constraints:
+σc = Sigmoid 
+W3 · [h
+(2)
+u
+, h(2)
+v
+, ec] + b3
+
+, (13)
+where W3 ∈ R
+1×(8+8+3)
+, b3 ∈ R, and [h
+(2)
+u , h(2)
+v , ec]
+concatenates the embeddings of nodes u and v and edge
+features. The output σc ∈ [0, 1] quantifies the suitability
+of edge c for rebalancing, with lower values indicating
+potential imbalance (e.g., min(l
+u
+c /Cc, ru
+c /Cc) < 0.2).
+The constraint outputs modulate node embeddings to penalize imbalance by scaling the final node embeddings:
+h
+(3)
+v = h
+(2)
+v
+·
+
+1
+|N (v)|
+X
+c∈Cv
+σc
+!
+, (14)
+where Cv is the set of edges incident to v. This modulation
+reduces the influence of nodes connected to imbalanced edges,
+ensuring that paths involving such edges receive lower scores.
+The path scoring module evaluates candidate circular
+paths identified via depth-first search. For a path p =
+(c1, c2, . . . , ck), the score is:
+sp =
+X
+ci=(ui,vi)∈p
+σci
+· MLP([h
+(3)
+ui
+, h(3)
+vi
+]), (15)
+where the MLP (Multi-Layer Perceptron) has two hidden
+layers (16 and 8 units, ReLU activation) and outputs a scalar.
+The constraint scores σci
+ensure that paths violating balance
+constraints are penalized, while the MLP aggregates node
+embeddings to prioritize paths with high liquidity potential.
+2) Implementation Details: The GNN is implemented using PyTorch Geometric, with hyperparameters:
+• Learning Rate: 0.001, optimized via Adam.
+• Dropout Rate: 0.2, applied after each GCN layer.
+• Layer Dimensions: Input (2), GCN1 (16), GCN2 (8),
+MLP (16, 8, 1).
+• Batch Size: 64, for training on simulated PCN graphs.
+The computational complexity is O(|V | · dmax · F + |E| · F
+′
+),
+where |V | and |E| are the number of nodes and edges, dmax
+is the maximum node degree, and F and F
+′
+are the feature
+dimensions of GCN and constraint layers, respectively. For
+a typical PCN with |V | = 500, |E| = 2000, and dmax =
+10, forward propagation is efficient on modern GPUs (e.g.,
+NVIDIA A100).
+3) GNN Path Calculation Algorithm: The constrained
+GNN path calculation process is formalized in Algorithm 3,
+which details the forward propagation through the GNN and
+the scoring of candidate paths. The algorithm ensures efficient
+computation and constraint integration, producing a ranked list
+of paths for rebalancing.
+E. Step 4: Iterative Rebalancing Execution
+The leader initiates a multi-cycle rebalancing protocol. At
+each cycle i, it first generates and ranks candidate paths using
+the Constrained GNN (Step 3). The election then attempts to
+execute transfers along the highest-ranked paths while validating constraints. If the highest-scoring path is infeasible (e.g.,
+due to capacity or skew constraints), the protocol proceeds to
+the next-best path. For each candidate path p, we compute
+the maximum transferable amount xp along p and attempt a
+transfer of amount A = min(xp, Ai) in that cycle.
+After executing a path, the framework checks for skew
+violations: if any channel c ∈ p has
+Skew(c) =
+
+
+
+(lu + A) − (rv − A)
+Cc
+
+
+ > σ,
+or if the minimum balance ratio falls below θ, the transfer
+is considered too imbalancing. The leader then rolls back to
+the previous state and reduces Ai ← F · Ai (with F < 1) to
+allow a smaller partial transfer. This reduction can be retried
+on the same path or used for the next-best path, enabling
+partial rebalancing along an otherwise infeasible route. If a
+transfer passes validation, the network state is updated and
+checked for overall liquidity improvement (e.g., reduction
+in maximum channel imbalance beyond ϵ). If improvement
+exceeds a threshold ϵ, the protocol may terminate early.
+This process repeats for up to M cycles or until convergence. Clear stopping criteria include reaching the maximum
+cycles or finding no path that yields significant improvement.
+The iterative logic is outlined in Algorithm 6 below.
+Hyperparameters used include:
+• M: maximum number of rebalancing cycles (e.g., 10).
+Algorithm 3 Constrained GNN Path Calculation
+1: function GNNPATHCALCULATION(graph G = (V, E),
+nodef eatures{h
+(0)
+v }, edgef eatures{ec})
+2: Initialize h
+(1)
+v , h(2)
+v , h(3)
+v ← 0 for all v ∈ V
+3: Initialize σc ← 0 for all c ∈ E
+4: for each v ∈ V do ▷ First GCN Layer
+5: mv ←
+P
+u∈N(v)
+h
+(0)
+√ u +e(u,v)
+|N(v)||N(u)|
+6: h
+(1)
+v ← ReLU(W1 · mv + B1h
+(0)
+v )
+7: end for
+8: for each v ∈ V do ▷ Second GCN Layer
+9: mv ←
+P
+u∈N(v)
+h
+(1)
+√ u +e(u,v)
+|N(v)||N(u)|
+10: h
+(2)
+v ← ReLU(W2 · mv + B2h
+(1)
+v )
+11: end for
+12: for each c = (u, v) ∈ E do ▷ Constraint Layer
+13: σc ← Sigmoid(W3 · [h
+(2)
+u , h(2)
+v , ec] + b3)
+14: end for
+15: for each v ∈ V do ▷ Modulate Embeddings
+16: h
+(3)
+v ← h
+(2)
+v ·
+
+1
+|N(v)|
+P
+c∈Cv
+σc
+
+17: end for
+18: P ← DepthFirstSearch(G) ▷ Find circular paths
+19: scores ← ∅
+20: for each path p = (c1, . . . , ck) ∈ P do
+21: sp ← 0
+22: for each ci = (ui
+, vi) ∈ p do
+23: sp ← sp + σci
+· MLP([h
+(3)
+ui
+, h(3)
+vi
+])
+24: end for
+25: scores ← scores ∪ {(sp, p)}
+26: end for
+27: return sort(scores, key = λx : x[0], descending) ▷
+Ranked paths
+28: end function
+• F: transfer reduction factor (0 < F < 1, e.g., 0.8) used
+when rolling back a failed transfer.
+• σ: skew tolerance threshold (e.g., 0.8) for aborting excessive imbalance.
+• θ: minimum balance ratio threshold (e.g., 0.2) used in
+leader election and validation.
+• ϵ: improvement threshold; if net liquidity gain falls below
+this, the protocol converges.
+• λ, µ, ν: weights for skew, fee, and latency penalties in the
+scoring function (from Step 3).
+• K: maximum path length (number of channels) for cycle
+search (used in Step 3).
+F. Step 5: Periodic Leader Re-Election
+At each fixed interval ∆t (e.g., every 10 minutes or after
+a set number of transactions), a periodic election is triggered
+using the same protocol as in Step 2. All nodes with active rebalancing requests recompute their hash hv = SHA256(IDv ∥
+T) with the new timestamp, and the MULTIPATHLEADERELECTION function is invoked. The sorted-hash fallback logic
+Algorithm 4 Iterative Rebalancing Execution
+1: procedure ITERATIVEREBALANCE(N , M, A1)
+2: original ← Copy(N )
+3: for i = 1 to M do
+4: paths ← GNNPathCalculation(N ) ▷ ranked by
+Score
+5: for each (Score, p) in paths do
+6: xp ← minc∈p rc ▷ max transferable
+7: if xp ≤ 0 then
+8: continue
+9: end if
+10: A ← min(xp, Ai)
+11: if not ValidatePath(p, A) then
+12: continue ▷ path not feasible
+13: end if
+14: Execute transfer of amount A along p
+15: if maxc∈p Skew(c) > σ or min balance ratio
+< θ then
+16: N ← original ▷ rollback
+17: Ai ← F · Ai ▷ reduce amount
+18: continue
+19: end if
+20: if LiquidityImprovement(N ) > ϵ then
+21: return N ▷ early convergence
+22: end if
+23: break ▷ move to next cycle
+24: end for
+25: end for
+26: return N ▷ return final state
+27: end procedure
+ensures that the first node satisfying the capacity constraints
+becomes the new leader.
+When a new leader vnew is elected, it broadcasts a signed
+LEADER_ANNOUNCE message to the network. The previous
+leader (if different) finalizes its current rebalancing cycle,
+transfers any necessary state, and then relinquishes control.
+This coordination ensures no cycle is left incomplete or
+lost. After verification of the announcement, vnew assumes
+coordination of subsequent cycles under the updated state.
+This process repeats at each interval, ensuring a fair rotation
+of leadership over time.
